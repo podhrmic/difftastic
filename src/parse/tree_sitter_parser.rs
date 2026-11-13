@@ -25,8 +25,9 @@ pub(crate) struct TreeSitterSubLanguage {
     /// capture group (the name is arbitrary).
     query: ts::Query,
 
-    /// What language parser to use (refers in turn to a TreeSitterConfig).
-    parse_as: guess::Language,
+    /// Get the parser configuration. A fragment grammar (e.g. a Cryptol
+    /// expression) need not be a separately selectable file language.
+    parse_as: fn() -> &'static TreeSitterConfig,
 }
 
 /// Configuration for a tree-sitter parser.
@@ -114,6 +115,20 @@ pub(crate) fn from_language(language: guess::Language) -> &'static TreeSitterCon
     cache
         .entry(language)
         .or_insert_with(|| Box::leak(Box::new(build_config(language))))
+}
+
+fn cryptol_config(language_fn: tree_sitter_language::LanguageFn) -> TreeSitterConfig {
+    let language = tree_sitter::Language::new(language_fn);
+    TreeSitterConfig {
+        language: language.clone(),
+        atom_nodes: ["string", "character", "number", "comment"]
+            .into_iter()
+            .collect(),
+        delimiter_tokens: vec![("(", ")"), ("[", "]"), ("{", "}")],
+        ignore_trailing_tokens: vec![],
+        highlight_query: ts::Query::new(&language, tree_sitter_cryptol::HIGHLIGHTS_QUERY).unwrap(),
+        sub_languages: vec![],
+    }
 }
 
 fn build_config(language: guess::Language) -> TreeSitterConfig {
@@ -274,6 +289,7 @@ fn build_config(language: guess::Language) -> TreeSitterConfig {
                 sub_languages: vec![],
             }
         }
+        Cryptol => cryptol_config(tree_sitter_cryptol::LANGUAGE),
         CSharp => {
             let language_fn = tree_sitter_c_sharp::LANGUAGE;
             let language = tree_sitter::Language::new(language_fn);
@@ -576,12 +592,12 @@ fn build_config(language: guess::Language) -> TreeSitterConfig {
                     TreeSitterSubLanguage {
                         query: ts::Query::new(&language, "(style_element (raw_text) @contents)")
                             .unwrap(),
-                        parse_as: Css,
+                        parse_as: || from_language(Css),
                     },
                     TreeSitterSubLanguage {
                         query: ts::Query::new(&language, "(script_element (raw_text) @contents)")
                             .unwrap(),
-                        parse_as: JavaScript,
+                        parse_as: || from_language(JavaScript),
                     },
                 ],
             }
@@ -791,7 +807,7 @@ fn build_config(language: guess::Language) -> TreeSitterConfig {
                 sub_languages: vec![TreeSitterSubLanguage {
                     query: ts::Query::new(&language, "(shell_function (shell_command) @contents)")
                         .unwrap(),
-                    parse_as: Bash,
+                    parse_as: || from_language(Bash),
                 }],
             }
         }
@@ -1071,6 +1087,59 @@ fn build_config(language: guess::Language) -> TreeSitterConfig {
                 sub_languages: vec![],
             }
         }
+        SawScript => {
+            static CRYPTOL_EXPR: LazyLock<TreeSitterConfig> =
+                LazyLock::new(|| cryptol_config(tree_sitter_cryptol::LANGUAGE_EXPR));
+            static CRYPTOL_TYPE: LazyLock<TreeSitterConfig> =
+                LazyLock::new(|| cryptol_config(tree_sitter_cryptol::LANGUAGE_TYPE));
+
+            let language = tree_sitter::Language::new(tree_sitter_saw_script::LANGUAGE);
+            TreeSitterConfig {
+                language: language.clone(),
+                atom_nodes: ["string", "number", "line_comment", "block_comment"]
+                    .into_iter()
+                    .collect(),
+                delimiter_tokens: vec![
+                    ("(", ")"),
+                    ("[", "]"),
+                    ("{", "}"),
+                    ("{{", "}}"),
+                    ("{|", "|}"),
+                ],
+                ignore_trailing_tokens: vec![],
+                highlight_query: ts::Query::new(
+                    &language,
+                    tree_sitter_saw_script::HIGHLIGHTS_QUERY,
+                )
+                .unwrap(),
+                sub_languages: vec![
+                    TreeSitterSubLanguage {
+                        query: ts::Query::new(
+                            &language,
+                            "(cryptol_declarations (cryptol_content) @content)",
+                        )
+                        .unwrap(),
+                        parse_as: || from_language(Cryptol),
+                    },
+                    TreeSitterSubLanguage {
+                        query: ts::Query::new(
+                            &language,
+                            "(cryptol_code (cryptol_content) @content)",
+                        )
+                        .unwrap(),
+                        parse_as: || &CRYPTOL_EXPR,
+                    },
+                    TreeSitterSubLanguage {
+                        query: ts::Query::new(
+                            &language,
+                            "(cryptol_type (cryptol_content) @content)",
+                        )
+                        .unwrap(),
+                        parse_as: || &CRYPTOL_TYPE,
+                    },
+                ],
+            }
+        }
         Scala => {
             let language_fn = tree_sitter_scala::LANGUAGE;
             let language = tree_sitter::Language::new(language_fn);
@@ -1338,7 +1407,7 @@ pub(crate) fn parse_subtrees(
                 continue;
             }
 
-            let subconfig = from_language(language.parse_as);
+            let subconfig = (language.parse_as)();
             let mut parser = ts::Parser::new();
             parser
                 .set_language(&subconfig.language)
@@ -2100,6 +2169,68 @@ mod tests {
         assert_eq!(res, expected);
     }
 
+    #[test]
+    fn test_cryptol_samples() {
+        let config = from_language(guess::Language::Cryptol);
+        for source in [
+            include_str!("../../sample_files/cryptol_1.cry"),
+            include_str!("../../sample_files/cryptol_2.cry"),
+            include_str!("../../sample_files/cli_tests/cryptol_format_1.cry"),
+            include_str!("../../sample_files/cli_tests/cryptol_format_2.cry"),
+        ] {
+            let tree = to_tree(source, config);
+            assert!(
+                !tree.root_node().has_error(),
+                "{}",
+                tree.root_node().to_sexp()
+            );
+        }
+    }
+
+    #[test]
+    fn test_cryptol_delimiters_and_literals() {
+        fn collect<'a>(
+            nodes: &[&'a Syntax<'a>],
+            delimiters: &mut Vec<(&'a str, &'a str)>,
+            atoms: &mut Vec<&'a str>,
+        ) {
+            for node in nodes {
+                match node {
+                    Syntax::List {
+                        open_content,
+                        close_content,
+                        children,
+                        ..
+                    } => {
+                        delimiters.push((open_content, close_content));
+                        collect(children, delimiters, atoms);
+                    }
+                    Syntax::Atom { content, .. } => atoms.push(content),
+                }
+            }
+        }
+
+        let arena = Arena::new();
+        let config = from_language(guess::Language::Cryptol);
+        let nodes = parse(
+            &arena,
+            "x = ([1, 2], { label = \"a b\", ch = 'x' })\n",
+            config,
+            false,
+        );
+        let mut delimiters = Vec::new();
+        let mut atoms = Vec::new();
+        collect(&nodes, &mut delimiters, &mut atoms);
+        for pair in [("(", ")"), ("[", "]"), ("{", "}")] {
+            assert!(
+                delimiters.contains(&pair),
+                "Missing delimiter pair {pair:?}"
+            );
+        }
+        assert!(atoms.contains(&"\"a b\""));
+        assert!(atoms.contains(&"'x'"));
+    }
+
     /// Test that HTML with CSS inside it is parsed as such, instead of
     /// being left as a single atom.
     #[test]
@@ -2121,6 +2252,88 @@ mod tests {
                 panic!("Top level isn't a list");
             }
         };
+    }
+
+    #[test]
+    fn test_saw_script_samples() {
+        let config = from_language(guess::Language::SawScript);
+        for source in [
+            include_str!("../../sample_files/saw_script_1.saw"),
+            include_str!("../../sample_files/saw_script_2.saw"),
+            include_str!("../../sample_files/cli_tests/saw_script_format_1.saw"),
+            include_str!("../../sample_files/cli_tests/saw_script_format_2.saw"),
+            include_str!("../../sample_files/cli_tests/saw_script_comments_1.saw"),
+            include_str!("../../sample_files/cli_tests/saw_script_comments_2.saw"),
+        ] {
+            let tree = to_tree(source, config);
+            assert!(
+                !tree.root_node().has_error(),
+                "{}",
+                tree.root_node().to_sexp()
+            );
+            let subtrees = parse_subtrees(source, config, &tree);
+            assert!(subtrees.len() >= 3);
+            for (subtree, _, _) in subtrees.values() {
+                assert!(
+                    !subtree.root_node().has_error(),
+                    "{}",
+                    subtree.root_node().to_sexp()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_saw_script_cryptol_entry_points() {
+        let source = "let {{ inc x = x + 1 }}; print {{ \\x -> inc x }}; print {| [8] -> [8] |};";
+        let config = from_language(guess::Language::SawScript);
+        let tree = to_tree(source, config);
+        let subtrees = parse_subtrees(source, config, &tree);
+        assert_eq!(subtrees.len(), 3);
+        let mut kinds = Vec::new();
+        for (subtree, _, _) in subtrees.values() {
+            assert!(
+                !subtree.root_node().has_error(),
+                "{}",
+                subtree.root_node().to_sexp()
+            );
+            kinds.push(subtree.root_node().named_child(0).unwrap().kind());
+        }
+        kinds.sort();
+        assert_eq!(kinds, ["function", "lambda", "schema"]);
+
+        fn has_delimiters(nodes: &[&Syntax], open: &str, close: &str) -> bool {
+            nodes.iter().any(|node| match node {
+                Syntax::List {
+                    open_content,
+                    close_content,
+                    children,
+                    ..
+                } => {
+                    (open_content == open && close_content == close)
+                        || has_delimiters(children, open, close)
+                }
+                Syntax::Atom { .. } => false,
+            })
+        }
+        let arena = Arena::new();
+        let nodes = parse(&arena, source, config, false);
+        assert!(has_delimiters(&nodes, "{{", "}}"));
+        assert!(has_delimiters(&nodes, "{|", "|}"));
+        assert!(has_delimiters(&nodes, "[", "]"));
+    }
+
+    #[test]
+    fn test_saw_script_embedded_cryptol_errors() {
+        // The outer SAWScript grammar treats the content as an opaque token;
+        // an invalid expression must still count towards the parse error limit.
+        let source = "print {{ x = 1 }};";
+        let config = from_language(guess::Language::SawScript);
+        let tree = to_tree(source, config);
+        assert!(!tree.root_node().has_error());
+        let arena = Arena::new();
+        let (_, errors) = to_syntax(&tree, source, &arena, config, false);
+        assert!(errors.count > 0);
     }
 
     /// Ensure that we don't crash when loading any of the

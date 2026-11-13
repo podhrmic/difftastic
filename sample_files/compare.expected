@@ -52,6 +52,9 @@ sample_files/context_1.rs sample_files/context_2.rs
 sample_files/contiguous_1.js sample_files/contiguous_2.js
 7ac6081dee02e3529a88defca194bc00  -
 
+sample_files/cryptol_1.cry sample_files/cryptol_2.cry
+f8e5b24db3cbfa908c2e57d0410aa179  -
+
 sample_files/css_1.css sample_files/css_2.css
 6d53cbb5dc5d66adfad2d8d67c883178  -
 
@@ -228,6 +231,9 @@ b63c743f2133480de3ba42ecdec5eb93  -
 
 sample_files/ruby_1.rb sample_files/ruby_2.rb
 a0a7121421e3d57acadc08519275dcce  -
+
+sample_files/saw_script_1.saw sample_files/saw_script_2.saw
+d47fd7453f1a739f1a255eaf7f27dde9  -
 
 sample_files/scala_1.scala sample_files/scala_2.scala
 2304bea82a6dae573964afdaeb47f845  -

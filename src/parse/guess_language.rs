@@ -28,6 +28,7 @@ pub(crate) enum Language {
     CMake,
     CommonLisp,
     CPlusPlus,
+    Cryptol,
     CSharp,
     Css,
     Dart,
@@ -69,6 +70,7 @@ pub(crate) enum Language {
     Racket,
     Ruby,
     Rust,
+    SawScript,
     Scala,
     Scheme,
     Solidity,
@@ -126,6 +128,7 @@ pub(crate) fn language_name(language: Language) -> &'static str {
         CMake => "CMake",
         CommonLisp => "Common Lisp",
         CPlusPlus => "C++",
+        Cryptol => "Cryptol",
         CSharp => "C#",
         Css => "CSS",
         Dart => "Dart",
@@ -167,6 +170,7 @@ pub(crate) fn language_name(language: Language) -> &'static str {
         Racket => "Racket",
         Ruby => "Ruby",
         Rust => "Rust",
+        SawScript => "SAWScript",
         Scala => "Scala",
         Scheme => "Scheme",
         Solidity => "Solidity",
@@ -255,6 +259,7 @@ pub(crate) fn language_globs(language: Language) -> Vec<glob::Pattern> {
             "*.cc", "*.cpp", "*.c++", "*.cxx", "*.cu", "*.h", "*.hh", "*.hpp", "*.hxx", "*.inl",
             "*.ino", "*.ipp", "*.ixx", "*.tcc",
         ],
+        Cryptol => &["*.cry"],
         CSharp => &["*.cs"],
         Css => &["*.css"],
         Dart => &["*.dart"],
@@ -372,6 +377,7 @@ pub(crate) fn language_globs(language: Language) -> Vec<glob::Pattern> {
             "Rakefile",
         ],
         Rust => &["*.rs"],
+        SawScript => &["*.saw"],
         Scala => &["*.scala", "*.sbt", "*.sc"],
         Scheme => &["*.scm", "*.sch", "*.ss"],
         Solidity => &["*.sol"],
@@ -528,6 +534,7 @@ fn from_emacs_mode_header(src: &str) -> Option<Language> {
             "ada" => Ada,
             "c" => C,
             "clojure" => Clojure,
+            "cryptol" => Cryptol,
             "csharp" => CSharp,
             "css" => Css,
             "dart" => Dart,
@@ -554,6 +561,7 @@ fn from_emacs_mode_header(src: &str) -> Option<Language> {
             "rjsx" => JavascriptJsx,
             "ruby" => Ruby,
             "rust" => Rust,
+            "saw" | "saw-script" | "sawscript" => SawScript,
             "scala" => Scala,
             "sh" => Bash,
             "solidity" => Solidity,
@@ -637,6 +645,32 @@ mod tests {
     fn test_guess_by_extension() {
         let path = Path::new("foo.el");
         assert_eq!(guess(path, "", &[]), Some(EmacsLisp));
+    }
+
+    #[test]
+    fn test_guess_cryptol() {
+        assert_eq!(guess(Path::new("cipher.cry"), "", &[]), Some(Cryptol));
+        assert_eq!(
+            guess(Path::new("cipher"), "// -*- mode: cryptol -*-", &[]),
+            Some(Cryptol)
+        );
+        assert_eq!(
+            language_override_from_name("Cryptol"),
+            Some(LanguageOverride::Language(Cryptol))
+        );
+    }
+
+    #[test]
+    fn test_guess_saw_script() {
+        assert_eq!(guess(Path::new("verify.saw"), "", &[]), Some(SawScript));
+        assert_eq!(
+            guess(Path::new("verify"), "// -*- mode: saw-script -*-", &[]),
+            Some(SawScript)
+        );
+        assert_eq!(
+            language_override_from_name("SAWScript"),
+            Some(LanguageOverride::Language(SawScript))
+        );
     }
 
     #[test]

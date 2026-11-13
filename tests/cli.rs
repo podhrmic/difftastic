@@ -203,6 +203,123 @@ fn list_languages() {
 }
 
 #[test]
+fn cryptol_diff() {
+    let mut cmd = get_base_command();
+    cmd.args([
+        "--color=never",
+        "--display=inline",
+        "--parse-error-limit=0",
+        "--exit-code",
+        "sample_files/cryptol_1.cry",
+        "sample_files/cryptol_2.cry",
+    ]);
+    cmd.assert().code(1).stdout(
+        predicate::str::contains("Cryptol")
+            .and(predicate::str::contains("step y = y + 1"))
+            .and(predicate::str::contains("step y = y + 2"))
+            .and(predicate::str::contains("exceeded").not())
+            .and(predicate::str::contains("Text").not()),
+    );
+}
+
+#[test]
+fn cryptol_formatting_only() {
+    let mut cmd = get_base_command();
+    cmd.args([
+        "--color=never",
+        "--parse-error-limit=0",
+        "--exit-code",
+        "sample_files/cli_tests/cryptol_format_1.cry",
+        "sample_files/cli_tests/cryptol_format_2.cry",
+    ]);
+    cmd.assert().success().stdout(
+        predicate::str::contains("Cryptol").and(predicate::str::contains("No syntactic changes")),
+    );
+}
+
+#[test]
+fn cryptol_list_languages() {
+    let mut cmd = get_base_command();
+    cmd.args(["--color=never", "--list-languages"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Cryptol").and(predicate::str::contains("*.cry")));
+}
+
+#[test]
+fn saw_script_diff() {
+    let mut cmd = get_base_command();
+    cmd.args([
+        "--color=never",
+        "--display=inline",
+        "--parse-error-limit=0",
+        "--exit-code",
+        "sample_files/saw_script_1.saw",
+        "sample_files/saw_script_2.saw",
+    ]);
+    cmd.assert().code(1).stdout(
+        predicate::str::contains("SAWScript")
+            .and(predicate::str::contains("increment x = x + 1"))
+            .and(predicate::str::contains("increment x = x + 2"))
+            .and(predicate::str::contains("exceeded").not())
+            .and(predicate::str::contains("Text").not()),
+    );
+}
+
+#[test]
+fn saw_script_formatting_only() {
+    let mut cmd = get_base_command();
+    cmd.args([
+        "--color=never",
+        "--parse-error-limit=0",
+        "--exit-code",
+        "sample_files/cli_tests/saw_script_format_1.saw",
+        "sample_files/cli_tests/saw_script_format_2.saw",
+    ]);
+    cmd.assert().success().stdout(
+        predicate::str::contains("SAWScript").and(predicate::str::contains("No syntactic changes")),
+    );
+}
+
+#[test]
+fn saw_script_ignore_comments_including_cryptol() {
+    for ignore_comments in [false, true] {
+        let mut cmd = get_base_command();
+        cmd.args([
+            "--color=never",
+            "--parse-error-limit=0",
+            "--exit-code",
+            "--check-only",
+            "sample_files/cli_tests/saw_script_comments_1.saw",
+            "sample_files/cli_tests/saw_script_comments_2.saw",
+        ]);
+        if ignore_comments {
+            cmd.arg("--ignore-comments");
+        }
+        cmd.assert()
+            .code(if ignore_comments { 0 } else { 1 })
+            .stdout(
+                predicate::str::contains("SAWScript").and(predicate::str::contains(
+                    if ignore_comments {
+                        "No syntactic changes"
+                    } else {
+                        "Has syntactic changes"
+                    },
+                )),
+            );
+    }
+}
+
+#[test]
+fn saw_script_list_languages() {
+    let mut cmd = get_base_command();
+    cmd.args(["--color=never", "--list-languages"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("SAWScript").and(predicate::str::contains("*.saw")));
+}
+
+#[test]
 fn test_mime_type_false_positive() {
     let mut cmd = get_base_command();
 

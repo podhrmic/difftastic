@@ -243,6 +243,7 @@ dependencies = [
  "tree-sitter-commonlisp",
  "tree-sitter-containerfile",
  "tree-sitter-cpp",
+ "tree-sitter-cryptol",
  "tree-sitter-css",
  "tree-sitter-dart-orchard",
  "tree-sitter-devicetree",
@@ -278,6 +279,7 @@ dependencies = [
  "tree-sitter-racket",
  "tree-sitter-ruby",
  "tree-sitter-rust-orchard",
+ "tree-sitter-saw-script",
  "tree-sitter-scala",
  "tree-sitter-scheme",
  "tree-sitter-sequel",
@@ -1005,6 +1007,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tree-sitter-cryptol"
+version = "0.1.1"
+source = "git+https://github.com/langston-barrett/tree-sitter-cryptol.git?rev=f17622086491fde2faad75f9cb1f4cea0cffc096#f17622086491fde2faad75f9cb1f4cea0cffc096"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
 name = "tree-sitter-css"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1345,6 +1356,15 @@ name = "tree-sitter-rust-orchard"
 version = "0.16.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43acd60db4dfc1ae9ea7aaae4ced7cbd1eb3c9a6593ddbe6c9c0e1e05674e4c2"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-saw-script"
+version = "0.2.0"
+source = "git+https://github.com/langston-barrett/tree-sitter-saw-script.git?rev=661cf1c549af91ee765be38d52c5c480277ed06c#661cf1c549af91ee765be38d52c5c480277ed06c"
 dependencies = [
  "cc",
  "tree-sitter-language",

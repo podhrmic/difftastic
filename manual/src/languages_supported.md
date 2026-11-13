@@ -18,6 +18,7 @@ with `difft --list-languages`.
 | Clojure         | [grammar-orchard/tree-sitter-clojure-orchard](https://codeberg.org/grammar-orchard/tree-sitter-clojure-orchard) |
 | CMake           | [uyha/tree-sitter-cmake](https://github.com/uyha/tree-sitter-cmake)                                             |
 | Common Lisp     | [theHamsta/tree-sitter-commonlisp](https://github.com/theHamsta/tree-sitter-commonlisp)                         |
+| Cryptol         | [langston-barrett/tree-sitter-cryptol](https://github.com/langston-barrett/tree-sitter-cryptol)                 |
 | Dart            | [grammar-orchard/tree-sitter-dart-orchard](https://codeberg.org/grammar-orchard/tree-sitter-dart-orchard)       |
 | Device Tree     | [joelspadin/tree-sitter-devicetree](https://github.com/joelspadin/tree-sitter-devicetree)                       |
 | Dockerfile      | [wharflab/tree-sitter-containerfile](https://github.com/wharflab/tree-sitter-containerfile)                     |
@@ -49,6 +50,7 @@ with `difft --list-languages`.
 | Racket          | [6cdh/tree-sitter-racket](https://github.com/6cdh/tree-sitter-racket)                                           |
 | Ruby            | [tree-sitter/tree-sitter-ruby](https://github.com/tree-sitter/tree-sitter-ruby)                                 |
 | Rust            | [grammar-orchard/tree-sitter-rust-orchard](https://codeberg.org/grammar-orchard/tree-sitter-rust-orchard)       |
+| SAWScript       | [langston-barrett/tree-sitter-saw-script](https://github.com/langston-barrett/tree-sitter-saw-script)           |
 | Scala           | [tree-sitter/tree-sitter-scala](https://github.com/tree-sitter/tree-sitter-scala)                               |
 | Scheme          | [6cdh/tree-sitter-scheme](https://github.com/6cdh/tree-sitter-scheme)                                           |
 | Solidity        | [JoranHonig/tree-sitter-solidity](https://github.com/JoranHonig/tree-sitter-solidity)                           |
