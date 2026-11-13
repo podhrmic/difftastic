@@ -1,0 +1,6 @@
+// Original proof
+let {{ inc x = x + 1 /* original declaration */ }};
+let f = {{ \x -> inc x /* original expression */ }};
+let t = {| [8] /* original type */ |};
+/* Original SAWScript block comment */
+print "hello";

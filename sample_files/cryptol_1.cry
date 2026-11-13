@@ -1,0 +1,18 @@
+module Cipher where
+
+type Word = [8]
+
+// Mix a word with a key.
+mix : Word -> Word -> Word
+mix key x = x ^ key
+
+round x = step x
+  where
+    step y = y + 1
+
+constants = [0x01, 0x02, 0x03]
+config = { rounds = 8, enabled = True }
+pair = (0x01, 0x02)
+label = "cipher v1"
+
+property mixTwice key x = mix key (mix key x) == x

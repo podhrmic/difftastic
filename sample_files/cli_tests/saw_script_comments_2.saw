@@ -1,0 +1,6 @@
+// Revised proof
+let {{ inc x = x + 1 /* revised declaration */ }};
+let f = {{ \x -> inc x /* revised expression */ }};
+let t = {| [8] /* revised type */ |};
+/* Revised SAWScript block comment */
+print "hello";

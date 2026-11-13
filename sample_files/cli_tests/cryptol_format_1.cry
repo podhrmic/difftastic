@@ -1,0 +1,5 @@
+module Formatting where
+  f x = g x
+    where
+      g y = y + 1
+  values = [1, 2, 3]

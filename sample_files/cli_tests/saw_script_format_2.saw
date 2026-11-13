@@ -1,0 +1,11 @@
+let {{
+    increment x = x  +  1
+}};
+let f = {{
+  \x -> increment   x
+}};
+let t = {| [ 8 ] -> [ 8 ] |};
+let proof = do {
+    print "hello";
+    z3;
+};
